@@ -16,6 +16,7 @@ import os
 
 import click
 import gym
+from gym.wrappers import FlattenObservation, FilterObservation
 import neat
 from py_neat.pytorch_neat.multi_env_eval import MultiEnvEvaluator
 from py_neat.pytorch_neat.neat_reporter import LogReporter
@@ -70,7 +71,9 @@ class EnvEvaluator:
 
 
 def make_env(with_monitor=False,folder_name='results'):
-    env = gym.make("CartPole-v1")
+    env = gym.make("FetchReach-v1")
+    env.env.reward_type = 'dense'
+    env = FlattenObservation(FilterObservation(env, ['observation', 'desired_goal']))
     if with_monitor:
         env = gym.wrappers.Monitor(env, folder_name, force=True)
     return env 
@@ -82,7 +85,7 @@ def make_net(genome, config, bs):
 
 def activate_net(net, states):
     outputs = net.activate(states).numpy()
-    return [int(outputs[:, 0] > 0.5)]
+    return outputs
 
 
 @click.command()
@@ -131,14 +134,14 @@ def run(n_generations,simulation_steps,simulation_runs):
         num_dones[g.key] = 0
         network_scores[g.key] = [] 
         
-    for _ in range(simulation_runs):
+    for sim_num in range(simulation_runs):
 
         for network,key in best_networks:
-            env = make_env(with_monitor=True,folder_name='results/'+str(key))
+            env = make_env(with_monitor=True,folder_name='results/'+str(key)+'/'+str(sim_num))
             print("Testing Network ",key)
             observation = env.reset()
             score = 0
-            for i in range(simulation_steps):
+            while True:
                 action = activate_net(network,[observation])
                 observation, reward, done, info = env.step(action[0])
                 score+=reward
