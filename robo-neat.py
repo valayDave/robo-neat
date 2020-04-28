@@ -59,27 +59,24 @@ class RoboGenome(neat.DefaultGenome):
 
 
 def compute_fitness(genome, net, episodes, min_reward, max_reward):
-    print(genome.discount,'genome.discount')
     m = int(round(np.log(0.01) / np.log(genome.discount)))
     # m represents the 
     discount_function = [genome.discount ** (m - i) for i in range(m + 1)]
-    print(discount_function,'discount_function')
     reward_error = []
     for score, data in episodes:
         # Compute normalized discounted reward.
-        print(len(data[:,-1]),len(discount_function),'len(data[:,-1]),len(discount_function)')
-        print(data[:,-1])
+        # print(len(data[:,-1]),len(discount_function),'len(data[:,-1]),len(discount_function)')
         # convolution is a mathematical operation on two functions (f and g) that produces a third function expressing how the shape of one is modified by the other. 
         # The term convolution refers to both the result function and to the process of computing it.
+        # data[:,-1] is the reward at each timestep in the episode. 
         dr = np.convolve(data[:,-1], discount_function)[m:]
         dr = 2 * (dr - min_reward) / (max_reward - min_reward) - 1.0
-        dr = np.clip(dr, -1.0, 1.0)
-        print(len(dr),'len(dr)')
+        # dr = np.clip(dr, -1.0, 1.0)
+        # print(data[:,-1])
+        # print(dr)
         for row, dr in zip(data, dr):
-            observation = row[:13]
-            output = net.activate(observation)
-            print(output,dr)
-            reward_error.append(float((output - dr) ** 2))
+            reward = row[17:]
+            reward_error.append(float((reward[0] - dr) ** 2))
 
     return reward_error
 
@@ -90,11 +87,17 @@ class PooledErrorCompute(object):
         self.test_episodes = []
         self.generation = 0
 
-        self.min_reward = -200
-        self.max_reward = 200
+        self.min_reward = 0
+        self.max_reward = 100
 
         self.episode_score = []
         self.episode_length = []
+
+    
+    def reward_function(self,distance):
+        distance = - distance * 100
+        reward=np.tanh(1/distance)*100
+        return reward
 
     def simulate(self, nets):
         scores = []
@@ -112,12 +115,12 @@ class PooledErrorCompute(object):
 
                 observation, reward, done, info = env.step(action)
                 # print(reward,action,observation)
-                data.append(np.hstack((observation, action, reward)))
+                data.append(np.hstack((observation, action, self.reward_function(reward))))
+                # print(reward,'reward')
 
                 if done:
                     break
             
-            print(len(data),'len(data)')
             data = np.array(data)
             score = np.sum(data[:,-1])
             self.episode_score.append(score)
