@@ -23,6 +23,8 @@ from py_neat.pytorch_neat.neat_reporter import LogReporter
 from py_neat.pytorch_neat.recurrent_net import RecurrentNet
 import visualize
 import matplotlib.pyplot as plt
+import pickle
+import json
 max_env_steps = 200
 
 import numpy as np
@@ -89,9 +91,9 @@ def activate_net(net, states):
 
 
 @click.command()
-@click.option("--n_generations", type=int, default=10)
-@click.option("--simulation_steps", type=int, default=100)
-@click.option("--simulation_runs", type=int, default=10)
+@click.option("--n_generations", type=int, default=1000)
+@click.option("--simulation_steps", type=int, default=200)
+@click.option("--simulation_runs", type=int, default=200)
 def run(n_generations,simulation_steps,simulation_runs):
     # Load the config file, which is assumed to live in
     # the same directory as this script.
@@ -122,7 +124,7 @@ def run(n_generations,simulation_steps,simulation_runs):
 
     pop.run(eval_genomes, n_generations)
     visualize.plot_stats(stats, ylog=False, view=False, filename="fitness.svg")
-    best_genomes = stats.best_unique_genomes(3)
+    best_genomes = stats.best_unique_genomes(10)
 
     best_networks = []
     num_dones = {}
@@ -152,7 +154,24 @@ def run(n_generations,simulation_steps,simulation_runs):
             network_scores[key].append(score)
     print("Final Dones :",num_dones)               
     print("Final Score :",network_scores)
+    final_object = {
+        'num_dones':num_dones,
+        'network_scores':network_scores
+    }
+    with open('results/final_data.json', 'w') as outfile:
+        json.dump(final_object,outfile)
 
+    for n, g in enumerate(best_genomes):
+        name = 'results/winner-{0}'.format(n)
+        with open(name+'.pickle', 'wb') as f:
+            pickle.dump(g, f)
+
+        visualize.draw_net(config, g, view=False, filename=name+"-net.gv")
+        visualize.draw_net(config, g, view=False, filename=name+"-net-enabled.gv",
+                            show_disabled=False)
+        visualize.draw_net(config, g, view=False, filename=name+"-net-enabled-pruned.gv",
+                            show_disabled=False, prune_unused=True)
+    visualize.plot_species(stats)
 
 
 if __name__ == "__main__":
