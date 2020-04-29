@@ -141,7 +141,7 @@ def run(n_generations,simulation_steps,simulation_runs):
     
     for g in best_genomes:
         best_networks.append((make_net(g, config,evaluator.batch_size),g.key))
-        num_dones[g.key] = 0
+        num_dones[g.key] = []
         network_scores[g.key] = [] 
         
     for sim_num in range(simulation_runs):
@@ -151,12 +151,14 @@ def run(n_generations,simulation_steps,simulation_runs):
             print("Testing Network ",key)
             observation = env.reset()
             score = 0
+            num_dones[key].append(0)
             while True:
                 action = activate_net(network,[observation])
                 observation, reward, done, info = env.step(action[0])
                 score+=reward
+                if info['is_success']:
+                    num_dones[key][-1]=1
                 if done:
-                    num_dones[key]+=1
                     break
             env.close()
             network_scores[key].append(score)

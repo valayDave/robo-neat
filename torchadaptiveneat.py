@@ -175,7 +175,7 @@ def run(n_generations,simulation_steps,simulation_runs,n_processes):
     
     for g in best_genomes:
         best_networks.append((make_net(g, config,evaluator.batch_size),g.key))
-        num_dones[g.key] = 0
+        num_dones[g.key] = []
         network_scores[g.key] = [] 
         
     for sim_num in range(simulation_runs):
@@ -185,12 +185,13 @@ def run(n_generations,simulation_steps,simulation_runs,n_processes):
             print("Testing Network ",key)
             observation = env.reset()
             score = 0
+            num_dones[key].append(0)
             while True:
                 action = activate_net(network,[observation])
                 observation, reward, done, info = env.step(action[0])
                 score+=reward
                 if info['is_success']:
-                    num_dones[key]+=1
+                    num_dones[key][-1]=1
                 if done:
                     break
             env.close()
@@ -215,7 +216,7 @@ def run(n_generations,simulation_steps,simulation_runs,n_processes):
         visualize.draw_net(config, g, view=False, filename=name+"-net-enabled-pruned.gv",
                             show_disabled=False, prune_unused=True)
     visualize.plot_species(stats,filename=ROOT_DIR+'species.svg')
-
+    config.save(ROOT_DIR+'config.cfg')
 
 if __name__ == "__main__":
     run()  # pylint: disable=no-value-for-parameter
