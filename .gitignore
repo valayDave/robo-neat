@@ -3,3 +3,4 @@
 results/
 *checkpoint*
 *.pyc
+adaptive_neat_results/
