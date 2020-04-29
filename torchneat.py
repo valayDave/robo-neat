@@ -28,8 +28,16 @@ import json
 max_env_steps = 200
 
 import numpy as np
+ROOT_DIR = 'neat_rnn_results/'
+LOG_FILE = ROOT_DIR+'neatlog.log'
 
+def safe_mkdir(path):
+    try:
+        os.mkdir(path)
+    except:
+        pass
 
+safe_mkdir(ROOT_DIR)    
 class EnvEvaluator:
     def __init__(self, make_net, activate_net, batch_size=1, max_env_steps=None, make_env=None, envs=None):
         if envs is None:
@@ -119,11 +127,11 @@ def run(n_generations,simulation_steps,simulation_runs):
     pop.add_reporter(stats)
     reporter = neat.StdOutReporter(True)
     pop.add_reporter(reporter)
-    logger = LogReporter("torchneat.log", evaluator.eval_genome)
+    logger = LogReporter(ROOT_DIR+"torchneat.log", evaluator.eval_genome)
     pop.add_reporter(logger)
 
     pop.run(eval_genomes, n_generations)
-    visualize.plot_stats(stats, ylog=False, view=False, filename="fitness.svg")
+    visualize.plot_stats(stats, ylog=False, view=False, filename=ROOT_DIR+"fitness.svg")
     best_genomes = stats.best_unique_genomes(10)
 
     best_networks = []
@@ -139,7 +147,7 @@ def run(n_generations,simulation_steps,simulation_runs):
     for sim_num in range(simulation_runs):
 
         for network,key in best_networks:
-            env = make_env(with_monitor=True,folder_name='results/'+str(key)+'/'+str(sim_num))
+            env = make_env(with_monitor=True,folder_name=ROOT_DIR+str(key)+'/'+str(sim_num))
             print("Testing Network ",key)
             observation = env.reset()
             score = 0
@@ -158,11 +166,11 @@ def run(n_generations,simulation_steps,simulation_runs):
         'num_dones':num_dones,
         'network_scores':network_scores
     }
-    with open('results/final_data.json', 'w') as outfile:
+    with open(ROOT_DIR+'final_data.json', 'w') as outfile:
         json.dump(final_object,outfile)
 
     for n, g in enumerate(best_genomes):
-        name = 'results/winner-{0}'.format(n)
+        name = ROOT_DIR+'winner-{0}'.format(n)
         with open(name+'.pickle', 'wb') as f:
             pickle.dump(g, f)
 
@@ -171,8 +179,8 @@ def run(n_generations,simulation_steps,simulation_runs):
                             show_disabled=False)
         visualize.draw_net(config, g, view=False, filename=name+"-net-enabled-pruned.gv",
                             show_disabled=False, prune_unused=True)
-    visualize.plot_species(stats)
-
+    visualize.plot_species(stats,filename=ROOT_DIR+'speciation.svg')
+    config.save(ROOT_DIR+'config.cfg')
 
 if __name__ == "__main__":
     run()  # pylint: disable=no-value-for-parameter

@@ -75,7 +75,7 @@ class EnvEvaluator:
                     state, reward, done, info = env.step(action)
                     fitnesses[i] += reward
                     if info['is_success']:
-                        fitnesses[i] = fitnesses[i]**2
+                        fitnesses[i] = fitnesses[i]+1
                     if not done:
                         states[i] = state
                     dones[i] = done
@@ -118,10 +118,10 @@ def activate_net(net, states):
 
 
 @click.command()
-@click.option("--n_generations", type=int, default=10)
+@click.option("--n_generations", type=int, default=2000)
 @click.option("--simulation_steps", type=int, default=200)
-@click.option("--simulation_runs", type=int, default=2)
-@click.option("--n_processes", type=int, default=1)
+@click.option("--simulation_runs", type=int, default=200)
+@click.option("--n_processes", type=int, default=2)
 def run(n_generations,simulation_steps,simulation_runs,n_processes):
     # Load the config file, which is assumed to live in
     # the same directory as this script.
