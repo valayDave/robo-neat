@@ -3,4 +3,4 @@ numpy==1.14.3
 gym
 graphviz
 matplotlib
-torch==0.4.1
+torch==2.2.0
